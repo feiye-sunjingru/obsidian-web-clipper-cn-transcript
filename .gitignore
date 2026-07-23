@@ -1,0 +1,35 @@
+.DS_Store
+
+# JavaScript
+node_modules/
+extension/dist/
+extension/dev/
+extension/builds/
+*.zip
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Models, caches, temporary media, and transcripts
+models/
+transcripts/
+tmp/
+*.m4a
+*.mp3
+*.wav
+*.webm
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+cookies.txt
+session.json
+
+# IDE and OS
+.idea/
+.vscode/
