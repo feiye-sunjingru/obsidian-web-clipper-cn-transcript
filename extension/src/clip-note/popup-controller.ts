@@ -1,7 +1,7 @@
 import browser from '../utils/browser-polyfill';
 import { createTranscription, getHealth, getModelStatus, waitForTranscription } from './api';
 import { readBrowserCookies } from './cookies';
-import { loadActiveJob, loadClipNoteSettings, saveActiveJob, saveCookieSettings } from './storage';
+import { loadActiveJob, loadClipNoteSettings, loadPanelCollapsed, saveActiveJob, saveCookieSettings, savePanelCollapsed } from './storage';
 import { ClipNoteJobState, ClipNotePlatform, StoredCookie, TranscriptResult } from './types';
 
 function platformForUrl(url: string): ClipNotePlatform | null {
@@ -81,7 +81,7 @@ async function setJobBadge(status: 'active' | 'failed' | 'clear'): Promise<void>
 }
 
 function renderActiveStage(status: HTMLElement, stage: string): void {
-	status.textContent = `${stage}。任务已提交，关闭弹窗不会取消；重新打开可查看进度。`;
+	status.textContent = `${stage}。任务已提交，关闭剪藏界面不会取消；重新打开可查看进度。`;
 }
 
 async function monitorJob(
@@ -110,7 +110,7 @@ async function monitorJob(
 		button.textContent = '字幕已生成';
 		await setJobBadge('clear');
 	} catch (error) {
-		const message = error instanceof TypeError ? 'Clip Note Helper 未连接' : (error as Error).message;
+		const message = error instanceof TypeError ? 'Transcript Helper 未连接' : (error as Error).message;
 		job = { ...job, status: 'failed', stage: '生成失败', error: message, updatedAt: Date.now() };
 		await saveActiveJob(job);
 		status.textContent = `生成失败：${message}`;
@@ -126,9 +126,27 @@ export async function updateClipNotePanel(
 	onTranscript: (transcript: string) => Promise<void>,
 ): Promise<void> {
 	const panel = document.getElementById('clip-note-panel') as HTMLElement | null;
+	const title = document.getElementById('clip-note-title') as HTMLElement | null;
+	const toggle = document.getElementById('clip-note-toggle') as HTMLButtonElement | null;
+	const content = document.getElementById('clip-note-panel-content') as HTMLElement | null;
 	const button = document.getElementById('clip-note-generate') as HTMLButtonElement | null;
 	const status = document.getElementById('clip-note-status') as HTMLElement | null;
-	if (!panel || !button || !status) return;
+	if (!panel || !title || !toggle || !content || !button || !status) return;
+	title.textContent = 'Transcript Generator';
+	let collapsed = await loadPanelCollapsed();
+	const renderCollapsed = () => {
+		content.hidden = collapsed;
+		panel.classList.toggle('is-collapsed', collapsed);
+		toggle.textContent = collapsed ? '展开' : '收起';
+		toggle.setAttribute('aria-expanded', String(!collapsed));
+		toggle.setAttribute('aria-label', collapsed ? '展开字幕生成' : '收起字幕生成');
+	};
+	renderCollapsed();
+	toggle.onclick = async () => {
+		collapsed = !collapsed;
+		renderCollapsed();
+		await savePanelCollapsed(collapsed);
+	};
 	const platform = platformForUrl(url);
 	const settings = await loadClipNoteSettings();
 	if (!settings.general.enabled || !platform || hasTranscript) {
@@ -160,14 +178,14 @@ export async function updateClipNotePanel(
 	button.disabled = false;
 	button.textContent = existingJob?.videoKey === videoKey && existingJob.status === 'failed'
 		? '重试生成字幕'
-		: '使用 Clip Note 生成字幕';
+		: '生成 transcript 字幕';
 	status.textContent = existingJob?.videoKey === videoKey && existingJob.status === 'failed'
 		? `上次生成失败：${existingJob.error || '未知错误'}`
-		: '点击后将启动本地 Helper。任务提交后可以关闭弹窗。';
+		: '点击后将启动本地 Helper。任务提交后可以关闭剪藏界面。';
 	button.onclick = async () => {
 		button.disabled = true;
 		button.textContent = '正在启动';
-		status.textContent = '正在连接 Clip Note Helper…';
+		status.textContent = '正在连接 Transcript Helper…';
 		try {
 			await getHealth();
 			if (settings.asr.provider === 'faster-whisper') {
@@ -193,7 +211,7 @@ export async function updateClipNotePanel(
 			await saveActiveJob(job);
 			await monitorJob(job, button, status, onTranscript);
 		} catch (error) {
-			const message = error instanceof TypeError ? 'Clip Note Helper 未连接' : (error as Error).message;
+			const message = error instanceof TypeError ? 'Transcript Helper 未连接' : (error as Error).message;
 			status.textContent = `生成失败：${message}`;
 			button.textContent = '重试生成字幕';
 			button.disabled = false;
