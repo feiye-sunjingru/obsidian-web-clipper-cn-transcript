@@ -9,11 +9,11 @@
 
 Transcript Generator 不建立另一套笔记生成或保存流程。它只在 Bilibili / YouTube 视频没有平台字幕时，按需下载音轨并生成带时间戳的 transcript，然后把结果写回 Obsidian Web Clipper 原有的 `{{transcript}}` 变量。模板、Interpreter、属性和保存到 Obsidian 的流程仍由 Web Clipper 负责。
 
-> 当前产品版本：`v0.2.2`。代码基线为 [Obsidian Web Clipper CN 1.4.6](https://github.com/nextcaicai/obsidian-clipper-cn/releases/tag/1.4.6)。已完成 macOS + Chrome/Chromium 的一键安装、覆盖安装和真实视频流程验证。Release 提供预构建 Chrome 扩展和 macOS 源码安装包，但不提供预编译独立程序。
+> 当前产品版本：`v0.3.0`。代码基线为 [Obsidian Web Clipper CN 1.4.6](https://github.com/nextcaicai/obsidian-clipper-cn/releases/tag/1.4.6)。已完成 macOS + Chrome/Chromium 的一键安装、覆盖安装和真实视频流程验证。Release 提供预构建 Chrome 扩展和 macOS 源码安装包，但不提供预编译独立程序。
 
 ## 版本号如何定义
 
-- `v0.2.2` 是本项目自身的产品版本，同时写入浏览器扩展和 Transcript Helper。
+- `v0.3.0` 是本项目自身的产品版本，同时写入浏览器扩展和 Transcript Helper。
 - `1.4.6` 是 Obsidian Web Clipper CN 上游版本，只作为代码基线记录，不再混用为本项目版本。
 - Obsidian 官方 Web Clipper、Web Clipper CN 和本项目各自独立发布，因此版本号本来就不会自动保持一致。
 - 后续合并新的 CN 上游版本时，会更新“代码基线”；只有本项目发布功能或修复时，才更新产品版本。
@@ -78,6 +78,7 @@ flowchart LR
 - Faster Whisper 本地 ASR
   - 音频与识别过程保留在本机
   - 支持 `tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo`
+  - 新安装默认选择 `tiny`，优先降低首次下载和验证门槛
   - 模型未安装时阻止任务并引导用户下载
 
 ### Cookies
@@ -167,6 +168,8 @@ bash install.sh
 
 macOS 安装包已经包含构建完成的 Chrome 扩展，因此不会执行 npm 安装或 Webpack 构建；它仍会通过 `uv` 准备 Helper 的 Python 3.11 隔离环境。Release 同时提供 `-chrome.zip`，该文件只包含浏览器扩展，不能单独提供本地字幕生成能力。
 
+从全新 Mac 开始安装、清理旧 Homebrew 和使用 `tiny` 模型完成真实视频验证，请参阅 [macOS 从零安装与完整验证](https://github.com/whatcccup/obsidian-web-clipper-cn-transcript/blob/main/docs/macos-clean-install-course-guide.md)。
+
 ### 2. 从源码一键安装或覆盖安装
 
 首次安装时，先克隆仓库并进入仓库文件夹，再运行安装脚本：
@@ -192,12 +195,12 @@ bash install.sh
 - 提供 Faster Whisper 模型选择菜单，可立即下载任一支持模型，也可以跳过并稍后在扩展设置页下载
 - 明确保证不创建 LaunchAgent
 
-交互安装会提供 `tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 和“跳过”选项。选择模型后会在 Helper 安装完成后开始下载；加载扩展后，需要在 `Settings → Transcript Generator` 中选择同一个模型。下载失败不会撤销已经完成的扩展和 Helper 安装，可以稍后在设置页重试。使用 `--yes` 执行无交互覆盖安装时默认跳过模型下载，也不会删除已经存在的模型。
+交互安装会提供 `tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 和“跳过”选项，直接按回车默认下载 `tiny`。选择模型后会在 Helper 安装完成后开始下载；加载扩展后，需要在 `Settings → Transcript Generator` 中选择同一个模型。下载失败不会撤销已经完成的扩展和 Helper 安装，可以稍后在设置页重试。使用 `--yes` 执行无交互覆盖安装时默认跳过模型下载，也不会删除已经存在的模型。
 
 如果检测到已经安装的 Transcript Helper，脚本会先询问是否覆盖。覆盖安装会更新 Helper、Launcher 和扩展构建产物，但不会删除：
 
 - 浏览器中的 Transcript Generator 设置、Cookies 和模板
-- `~/.cache/transcript-generator/` 中的 Whisper 模型
+- `~/.cache/obsidian-web-clipper-cn-transcript/` 中的 Whisper 模型
 - transcript 缓存
 
 覆盖安装也需要先进入新版源码文件夹：
@@ -216,10 +219,16 @@ extension/dist/
 Helper 会安装到：
 
 ```text
-~/Library/Application Support/TranscriptGenerator/
+~/Library/Application Support/ObsidianWebClipperCNTranscript/
 ```
 
-安装脚本会自动迁移 `v0.2.0` 使用的旧安装目录、模型缓存和 Native Messaging Host；扩展也会把旧浏览器存储键迁移到新的 `transcript_generator_*` 键。迁移不会删除 Cookies、模型、模板或任务设置。
+模型与 transcript 缓存位于：
+
+```text
+~/.cache/obsidian-web-clipper-cn-transcript/
+```
+
+安装脚本会自动迁移 `TranscriptGenerator` 和更早 `ClipNote` 名称使用的安装目录、模型缓存和 Native Messaging Host；扩展也会保留并迁移历史浏览器存储键。迁移不会删除 Cookies、模型、模板或任务设置。
 
 并注册 Native Messaging Host：
 
@@ -292,8 +301,8 @@ Settings → Transcript Generator
 |---|---|---:|
 | Transcript Generator 开关与 ASR 选择 | `chrome.storage.local` | 否 |
 | Bilibili / YouTube Cookies | `chrome.storage.local` | 否 |
-| Whisper 模型 | `~/.cache/transcript-generator/models/` | 否 |
-| transcript 缓存 | `~/.cache/transcript-generator/transcripts/` | 否 |
+| Whisper 模型 | `~/.cache/obsidian-web-clipper-cn-transcript/models/` | 否 |
+| transcript 缓存 | `~/.cache/obsidian-web-clipper-cn-transcript/transcripts/` | 否 |
 | 临时音频与 cookiefile | 系统临时目录 | 任务结束后删除 |
 | Helper 会话令牌 | 本机运行时文件，权限 `0600` | Helper 停止后失效 |
 

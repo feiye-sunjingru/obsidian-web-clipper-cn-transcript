@@ -12,7 +12,12 @@ import urllib.request
 from pathlib import Path
 
 
-APP_DIR = Path.home() / "Library" / "Application Support" / "TranscriptGenerator"
+APP_DIR = (
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "ObsidianWebClipperCNTranscript"
+)
 CONFIG_PATH = APP_DIR / "config.json"
 SESSION_PATH = APP_DIR / "runtime" / "session.json"
 LOG_PATH = APP_DIR / "logs" / "helper.log"
