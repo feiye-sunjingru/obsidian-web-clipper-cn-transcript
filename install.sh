@@ -3,8 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 INSTALL_DIR="$HOME/Library/Application Support/ObsidianWebClipperCNTranscript"
-PREVIOUS_INSTALL_DIR="$HOME/Library/Application Support/TranscriptGenerator"
-LEGACY_INSTALL_DIR="$HOME/Library/Application Support/ClipNote"
 ASSUME_YES=false
 WHISPER_MODEL="skip"
 
@@ -60,10 +58,6 @@ fi
 EXISTING_INSTALL_DIR=""
 if [ -d "$INSTALL_DIR" ]; then
   EXISTING_INSTALL_DIR="$INSTALL_DIR"
-elif [ -d "$PREVIOUS_INSTALL_DIR" ]; then
-  EXISTING_INSTALL_DIR="$PREVIOUS_INSTALL_DIR"
-elif [ -d "$LEGACY_INSTALL_DIR" ]; then
-  EXISTING_INSTALL_DIR="$LEGACY_INSTALL_DIR"
 fi
 
 if [ -n "$EXISTING_INSTALL_DIR" ]; then
