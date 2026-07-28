@@ -378,37 +378,6 @@ Home 目录只是推荐示例，不是强制路径。如果改用其他位置，
 
 从下一节开始，教程使用 `/你的实际保存目录/obsidian-web-clipper-cn-transcript` 作为占位符。执行命令前，必须把它替换成刚才选择的真实路径。可以在 Finder 中选中文件夹，按 `Option + Command + C` 复制完整路径。
 
-### 6.3 检查安装包结构
-
-下面的命令进入目录并显示关键文件：
-
-```bash
-cd "/你的实际保存目录/obsidian-web-clipper-cn-transcript"
-pwd
-ls -la
-ls -la extension/dist
-```
-
-根目录至少应包含：
-
-```text
-README.md
-LICENSE
-install.sh
-extension
-helper
-launcher
-```
-
-`extension/dist` 中应包含：
-
-```text
-manifest.json
-popup.html
-side-panel.html
-settings.html
-```
-
 ---
 
 ## 7. 一键安装 Helper，并下载 tiny 模型
