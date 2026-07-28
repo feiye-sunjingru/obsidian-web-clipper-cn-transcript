@@ -239,11 +239,13 @@ Apple Silicon 正确目标应是：
 
 ### 4.3 配置 Apple Silicon PATH
 
-Apple Silicon 用户执行下面两行，让当前终端和以后打开的终端都能找到 Homebrew：
+Apple Silicon 用户执行下面这些命令：先确保 macOS 的标准系统命令目录存在于 PATH，再加载 Homebrew。这样当前终端和以后打开的终端都能找到 `bash`、`ls` 和 `brew`：
 
 ```bash
+echo 'export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"' >> "$HOME/.zprofile"
 echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
-eval "$(/opt/homebrew/bin/brew shellenv)"
+source "$HOME/.zprofile"
+rehash
 ```
 
 Intel Mac 应使用安装器最后显示的 `Next steps`，通常是 `/usr/local/bin/brew`。
@@ -787,19 +789,21 @@ bash install.sh --yes
 Apple Silicon 先检查文件是否存在：
 
 ```bash
-ls -l /opt/homebrew/bin/brew
+/bin/ls -l /opt/homebrew/bin/brew
 ```
 
-如果存在，加载 Homebrew 环境：
+如果存在，先临时恢复标准系统路径，再加载 Homebrew 环境：
 
 ```bash
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 eval "$(/opt/homebrew/bin/brew shellenv)"
+rehash
 ```
 
-为了让以后打开的终端也生效，确认 `.zprofile` 有且只有一条正确配置：
+为了让以后打开的终端也生效，确认 `.zprofile` 同时包含标准系统路径和 Homebrew 配置：
 
 ```bash
-grep -n 'brew shellenv' "$HOME/.zprofile" 2>/dev/null
+/usr/bin/grep -nE 'export PATH|brew shellenv' "$HOME/.zprofile" 2>/dev/null
 ```
 
 ### 14.2 Homebrew 路径与电脑架构不一致
