@@ -8,15 +8,14 @@
 
 这份教程只讲 **Obsidian Web Clipper CN · Transcript**，不安装 BiliNote，不使用 DMG，不使用 Docker，也不创建开机自启服务。
 
-目标是从一台近似全新的 Mac 开始，完成以下闭环：
+目标是在一台普通 Mac 上完成以下闭环：
 
-1. 清除旧 Homebrew、旧 Transcript Helper 和旧 Faster Whisper 模型。
-2. 只安装一套官方 Homebrew。
-3. 安装 Transcript 所需的最少前置工具。
-4. 安装浏览器扩展、按需 Helper 和 Faster Whisper `tiny` 模型。
-5. 使用指定 YouTube 视频生成带时间戳的 transcript。
-6. 验证 `{{transcript}}` 能进入模板并保存到 Obsidian。
-7. 掌握日常启动、停止、升级和故障排除方法。
+1. 检查电脑是否已经具备所需环境。
+2. 只安装缺少的 Homebrew、Node.js 或 uv。
+3. 安装浏览器扩展、按需 Helper 和 Faster Whisper `tiny` 模型。
+4. 使用一个没有平台字幕的 YouTube 视频生成带时间戳的 transcript。
+5. 验证 `{{transcript}}` 能进入模板并保存到 Obsidian。
+6. 掌握日常启动、停止、升级和故障排除方法。
 
 ---
 
@@ -46,16 +45,16 @@ yt-dlp 下载音频 + Faster Whisper tiny 本地识别
 
 ### 1.1 安装位置
 
-本教程最终使用以下位置：
+本教程以以下稳定位置为例：
 
 ```text
-~/obsidian-web-clipper-cn-transcript/
+~/Applications/obsidian-web-clipper-cn-transcript/
 ```
 
-这里保存 GitHub Release 解压后的扩展文件和安装脚本。Chrome 会持续读取其中的：
+这里保存 GitHub Release 解压后的扩展文件和安装脚本。它不是强制路径；用户也可以选择其他固定目录。Chrome 会持续读取其中的：
 
 ```text
-~/obsidian-web-clipper-cn-transcript/extension/dist/
+~/Applications/obsidian-web-clipper-cn-transcript/extension/dist/
 ```
 
 Helper 的实际运行副本安装在：
@@ -121,10 +120,10 @@ pwd
 cd ~
 ```
 
-`~` 代表当前用户的主目录。例如用户名是 `cece` 时，`~` 通常代表：
+`~` 代表当前用户的主目录。例如用户名是 `whatcccup` 时，`~` 通常代表：
 
 ```text
-/Users/cece
+/Users/whatcccup
 ```
 
 路径中有空格时必须使用引号，例如：
@@ -150,213 +149,48 @@ uname -m
 
 ---
 
-## 3. 可选：把电脑恢复到干净验证状态
+## 3. 先检查电脑是否已经满足前置条件
 
-> [!CAUTION]
-> 本章会删除程序、缓存和模型。它只适合准备做“从零安装验证”的电脑。普通用户第一次安装 Transcript 应直接跳到第 4 章。
+很多 Mac 已经安装过 Homebrew、Node.js 或 uv。先检查，可以避免重复安装。
 
-删除前先确认没有需要保留的浏览器 Cookies、Web Clipper 模板、Homebrew 软件或本地模型。
-
-### 3.1 从 Chrome 移除旧扩展
-
-1. 打开 `chrome://extensions`。
-2. 找到“Obsidian Web Clipper CN · Transcript”。
-3. 点击“移除”。
-4. 如果还有旧的 Clip Note 或另一个开发目录加载的 Web Clipper CN，也一并辨认清楚。
-
-移除扩展会删除该扩展保存在 `chrome.storage.local` 中的 Transcript 设置和 Cookies。不要在需要保留配置时执行。
-
-### 3.2 查看 Transcript 本地文件
-
-下面的命令只检查，不删除任何内容：
+下面的命令只读取当前状态，不会安装或删除任何内容：
 
 ```bash
-ls -ld \
-  "$HOME/obsidian-web-clipper-cn-transcript" \
-  "$HOME/Library/Application Support/ObsidianWebClipperCNTranscript" \
-  "$HOME/Library/Application Support/TranscriptGenerator" \
-  "$HOME/.cache/obsidian-web-clipper-cn-transcript" \
-  "$HOME/.cache/transcript-generator" \
-  "$HOME/Library/Application Support/ClipNote" \
-  "$HOME/.cache/clip-note" \
-  2>/dev/null
-```
+echo "Architecture: $(uname -m)"
 
-下面的命令检查 Native Messaging 配置：
-
-```bash
-ls -l "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts" 2>/dev/null
-```
-
-### 3.3 删除 Transcript、旧名称和模型缓存
-
-> [!CAUTION]
-> 下面的命令会永久删除 Transcript Helper、Release 文件夹、所有本地 Whisper 模型和 transcript 缓存。确认路径完全一致后再执行。
-
-下面的命令删除当前版本与历史 Clip Note 名称留下的文件：
-
-```bash
-rm -rf \
-  "$HOME/obsidian-web-clipper-cn-transcript" \
-  "$HOME/Library/Application Support/ObsidianWebClipperCNTranscript" \
-  "$HOME/Library/Application Support/TranscriptGenerator" \
-  "$HOME/.cache/obsidian-web-clipper-cn-transcript" \
-  "$HOME/.cache/transcript-generator" \
-  "$HOME/Library/Application Support/ClipNote" \
-  "$HOME/.cache/clip-note"
-
-rm -f \
-  "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/cn.transcript.generator.launcher.json" \
-  "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/cn.clipnote.launcher.json"
-```
-
-下面的命令验证这些位置已经不存在：
-
-```bash
-for path in \
-  "$HOME/obsidian-web-clipper-cn-transcript" \
-  "$HOME/Library/Application Support/ObsidianWebClipperCNTranscript" \
-  "$HOME/.cache/obsidian-web-clipper-cn-transcript"; do
-  if [ -e "$path" ]; then
-    echo "Still exists: $path"
-  else
-    echo "Removed: $path"
-  fi
-done
-```
-
-### 3.4 清理 uv 管理的 Python 与缓存
-
-如果 `uv` 仍能运行，先查看它的数据位置：
-
-```bash
-command -v uv
-uv cache dir
-uv python dir
-uv tool dir
-```
-
-> [!CAUTION]
-> 下一组命令会删除 uv 管理的全部缓存、Python 和工具，不只针对 Transcript。如果其他项目也使用 uv，请跳过本节。
-
-下面的命令按 uv 自己报告的位置清理数据：
-
-```bash
-uv cache clean
-rm -rf "$(uv python dir)"
-rm -rf "$(uv tool dir)"
-```
-
-### 3.5 检查是否存在多套 Homebrew
-
-下面的命令不会修改电脑，只会显示可能存在的 Homebrew：
-
-```bash
-type -a brew 2>/dev/null || true
-
-for path in /opt/homebrew /usr/local/Homebrew "$HOME/.homebrew"; do
-  if [ -e "$path" ]; then
-    echo "Found: $path"
-    ls -ld "$path"
-  fi
-done
-```
-
-Apple Silicon 的目标是最终只保留：
-
-```text
-/opt/homebrew
-```
-
-不要把 `$HOME/.homebrew` 当作第二套“备用 Homebrew”。两套 Homebrew 会造成 Node、uv 和 PATH 来自不同位置，后续最难排查。
-
-### 3.6 使用官方脚本卸载 Homebrew
-
-> [!CAUTION]
-> Homebrew 卸载会删除通过该 Homebrew 安装的所有软件，包括 Node.js、uv、FFmpeg 等。请先确认这是用于从零验证的电脑。
-
-下面的命令先下载官方卸载脚本：
-
-```bash
-curl -fsSL \
-  https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh \
-  -o "$HOME/Downloads/homebrew-uninstall.sh"
-```
-
-Apple Silicon 用户先运行 dry-run，只预览 `/opt/homebrew` 将被删除的内容：
-
-```bash
-/bin/bash "$HOME/Downloads/homebrew-uninstall.sh" \
-  --dry-run \
-  --path=/opt/homebrew
-```
-
-确认预览内容后，下面的命令正式卸载 `/opt/homebrew`：
-
-```bash
-/bin/bash "$HOME/Downloads/homebrew-uninstall.sh" \
-  --path=/opt/homebrew
-```
-
-如果检查时确实发现了 `$HOME/.homebrew` 第二套安装，也先 dry-run：
-
-```bash
-/bin/bash "$HOME/Downloads/homebrew-uninstall.sh" \
-  --dry-run \
-  --path="$HOME/.homebrew"
-```
-
-确认后再卸载这套非标准 Homebrew：
-
-```bash
-/bin/bash "$HOME/Downloads/homebrew-uninstall.sh" \
-  --path="$HOME/.homebrew"
-```
-
-Intel Mac 应把 `/opt/homebrew` 替换成 `/usr/local`，不要同时套用 Apple Silicon 路径。
-
-### 3.7 清理 shell 中旧的 Homebrew PATH
-
-下面的命令只查找配置，不会修改文件：
-
-```bash
-grep -nE 'homebrew|brew shellenv' \
-  "$HOME/.zprofile" \
-  "$HOME/.zshrc" \
-  "$HOME/.profile" \
-  2>/dev/null || echo "No Homebrew PATH entry found"
-```
-
-如果输出里有 `$HOME/.homebrew` 或已删除 Homebrew 的旧路径，用文本编辑器打开对应文件。例如编辑 `.zprofile`：
-
-```bash
-nano "$HOME/.zprofile"
-```
-
-在 nano 中：
-
-1. 删除确认属于旧 Homebrew 的行。
-2. 按 `Control + O` 保存。
-3. 按回车确认文件名。
-4. 按 `Control + X` 退出。
-
-不要删除不认识的其他环境配置。
-
-### 3.8 验证清理结果
-
-关闭所有终端窗口，重新打开一个终端，然后执行：
-
-```bash
 for command_name in brew node npm uv; do
   if command -v "$command_name" >/dev/null 2>&1; then
-    echo "$command_name still exists: $(command -v "$command_name")"
+    echo "$command_name: $(command -v "$command_name")"
   else
-    echo "$command_name removed"
+    echo "$command_name: NOT INSTALLED"
   fi
 done
+
+if command -v brew >/dev/null 2>&1; then
+  echo "Homebrew prefix: $(brew --prefix)"
+fi
+
+if command -v node >/dev/null 2>&1; then
+  echo "Node.js version: $(node --version)"
+fi
+
+if command -v npm >/dev/null 2>&1; then
+  echo "npm version: $(npm --version)"
+fi
+
+if command -v uv >/dev/null 2>&1; then
+  echo "uv version: $(uv --version)"
+fi
 ```
 
-如果四项都显示 `removed`，并且 Transcript 的三个目录都不存在，就可以开始真正的全新安装。
+根据结果选择后续章节：
+
+- `brew`、`node`、`npm`、`uv` 都有路径，且 Node.js 为 `v18` 或更高版本：前置条件已经满足，直接跳到第 6 章下载 Transcript。
+- `brew` 显示 `NOT INSTALLED`：继续第 4 章安装 Homebrew。
+- Homebrew 已安装，但 `node`、`npm` 或 `uv` 缺失：跳到第 5 章安装前置工具。
+- Node.js 低于 `v18`：跳到第 5 章，通过 Homebrew 升级 Node.js。
+
+Apple Silicon 的 Homebrew prefix 应为 `/opt/homebrew`，Intel Mac 通常为 `/usr/local`。如果路径符合架构，就不需要卸载或重新安装 Homebrew。
 
 ---
 
@@ -505,24 +339,7 @@ obsidian-web-clipper-cn-transcript-v0.3.0-chrome.zip
 
 `-chrome.zip` 只有扩展，缺少 Helper 与 Launcher，不能单独生成本地字幕。
 
-### 6.2 校验 SHA-256
-
-下面的命令进入下载目录并计算文件摘要：
-
-```bash
-cd "$HOME/Downloads"
-shasum -a 256 obsidian-web-clipper-cn-transcript-v0.3.0-macos.zip
-```
-
-`v0.3.0` macOS 安装包的 SHA-256 应为：
-
-```text
-a2439937068aca77422046d77afbb758851bec57d81aaeac2398de93332cea2e
-```
-
-如果不一致，不要继续安装。删除文件并从项目官方 Release 重新下载。
-
-### 6.3 解压到稳定目录
+### 6.2 解压到稳定目录
 
 可以在 Finder 中双击 ZIP 解压。
 
@@ -532,10 +349,12 @@ a2439937068aca77422046d77afbb758851bec57d81aaeac2398de93332cea2e
 obsidian-web-clipper-cn-transcript-v0.3.0-macos
 ```
 
-把它移动到主目录，并统一使用与项目和 GitHub 仓库相同的名称：
+安装包不强制放在 Home 根目录。桌面、下载文件夹或其他有读写权限的位置都可以，但 Chrome 会持续读取其中的扩展文件，因此应选择一个不会随手删除或移动的固定目录。
+
+下面以当前用户的 `Applications` 文件夹为例，并统一使用与项目和 GitHub 仓库相同的名称：
 
 ```text
-obsidian-web-clipper-cn-transcript
+~/Applications/obsidian-web-clipper-cn-transcript
 ```
 
 也可以使用下面的终端命令解压：
@@ -547,22 +366,23 @@ ditto -x -k \
   "$HOME/Downloads"
 ```
 
-确认 `~/obsidian-web-clipper-cn-transcript` 不存在后，下面的命令移动并改名：
+下面的命令创建用户自己的 `Applications` 文件夹，然后移动并改名：
 
 ```bash
+mkdir -p "$HOME/Applications"
 mv \
   "$HOME/Downloads/obsidian-web-clipper-cn-transcript-v0.3.0-macos" \
-  "$HOME/obsidian-web-clipper-cn-transcript"
+  "$HOME/Applications/obsidian-web-clipper-cn-transcript"
 ```
 
-不要在安装完成后删除或移动 `~/obsidian-web-clipper-cn-transcript`，因为 Chrome 会持续从其中读取扩展文件。
+这里的目录只是示例，不是强制路径。如果改用其他位置，后面的 `cd` 命令和 Chrome 加载目录也要使用同一个实际路径。安装完成后不要删除或移动该目录。
 
-### 6.4 检查安装包结构
+### 6.3 检查安装包结构
 
 下面的命令进入目录并显示关键文件：
 
 ```bash
-cd "$HOME/obsidian-web-clipper-cn-transcript"
+cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
 pwd
 ls -la
 ls -la extension/dist
@@ -594,10 +414,10 @@ settings.html
 
 ### 7.1 运行安装器
 
-下面的命令必须在 `~/obsidian-web-clipper-cn-transcript` 中执行：
+下面的命令必须在刚才解压并固定保存的项目目录中执行。按照本教程示例：
 
 ```bash
-cd "$HOME/obsidian-web-clipper-cn-transcript"
+cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
 bash install.sh
 ```
 
@@ -696,7 +516,7 @@ find "$HOME/Library/LaunchAgents" \
 6. 输入下面的路径：
 
 ```text
-~/obsidian-web-clipper-cn-transcript/extension/dist
+~/Applications/obsidian-web-clipper-cn-transcript/extension/dist
 ```
 
 7. 点击“前往”。
@@ -710,16 +530,15 @@ Obsidian Web Clipper CN · Transcript
 
 建议点击 Chrome 工具栏的拼图图标，把扩展固定到工具栏。
 
-### 8.1 避免加载错误版本
+### 8.1 避免同时启用多个版本
 
-如果 Chrome 里同时存在以下扩展，先停用旧版本：
+如果 Chrome 里同时存在其他 Web Clipper 或从其他目录加载的同名扩展，先停用重复项。
 
 - Obsidian 官方 Web Clipper。
 - Obsidian Web Clipper CN。
-- 旧 Clip Note 测试版本。
-- 从另一个目录加载的 Transcript。
+- 从另一个目录加载的 Obsidian Web Clipper CN · Transcript。
 
-验证期间只保留当前 `~/obsidian-web-clipper-cn-transcript/extension/dist` 这一份启用，避免点击到错误图标。
+验证期间只保留当前固定目录中 `extension/dist` 这一份启用，避免点击到错误图标。
 
 ---
 
@@ -821,17 +640,13 @@ Cookies 只保存在该扩展的 `chrome.storage.local`，不会写入 transcrip
 
 ---
 
-## 11. 使用指定 YouTube 视频完成验证
+## 11. 使用没有字幕的 YouTube 视频完成验证
 
-验证视频：
-
-<https://www.youtube.com/watch?v=OcKl98ZQbMQ>
-
-这个测试路径用于验证“页面没有可直接使用的平台字幕时，下载音轨并使用 Faster Whisper 生成 transcript”的完整流程。YouTube 后续可能调整视频字幕或访问策略，因此应同时观察实际页面状态。
+自行选择一个没有平台字幕的 YouTube 视频，用于验证“下载音轨并使用 Faster Whisper 生成 transcript”的完整流程。不要使用教程中的固定链接，因为视频字幕状态和访问策略可能随时变化。
 
 ### 11.1 打开视频
 
-1. 使用已安装扩展的 Chrome 打开测试视频。
+1. 使用已安装扩展的 Chrome 打开一个确认没有平台字幕的 YouTube 视频。
 2. 等待 YouTube 页面完全加载。
 3. 确认地址栏仍是该视频的 `watch?v=...` 地址。
 
@@ -966,10 +781,9 @@ tail -n 100 \
 升级步骤：
 
 1. 下载最新版 `-macos.zip`。
-2. 校验 Release 页面公布的 SHA-256。
-3. 解压到一个新的临时目录。
-4. 进入新版目录。
-5. 执行覆盖安装。
+2. 解压到一个新的临时目录。
+3. 进入新版目录。
+4. 执行覆盖安装。
 
 下面的命令在新版目录执行覆盖安装：
 
@@ -982,7 +796,7 @@ bash install.sh --yes
 
 1. 打开 `chrome://extensions`。
 2. 找到原 Transcript 扩展。
-3. 如果 Chrome 仍指向旧目录，应把新版安装包放到稳定的 `~/obsidian-web-clipper-cn-transcript`，并重新加载其中的 `extension/dist`。
+3. 如果 Chrome 仍指向之前解压的版本目录，应把新版安装包放到固定目录，并重新加载其中的 `extension/dist`。
 4. 点击“重新加载”。
 
 覆盖安装不会主动删除：
@@ -1018,7 +832,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 grep -n 'brew shellenv' "$HOME/.zprofile" 2>/dev/null
 ```
 
-### 14.2 发现两套 Homebrew
+### 14.2 Homebrew 路径与电脑架构不一致
 
 执行：
 
@@ -1028,7 +842,7 @@ command -v brew
 brew --prefix
 ```
 
-Apple Silicon 正常使用 `/opt/homebrew`。不要通过不断修改 PATH 在两套 Homebrew 之间切换；应先盘点两套软件，再用第 3.6 节的官方卸载脚本移除不需要的一套。
+Apple Silicon 正常使用 `/opt/homebrew`，Intel Mac 通常使用 `/usr/local`。如果 `brew --prefix` 与电脑架构不一致，先不要继续安装 Transcript；请根据 Homebrew 官方文档修正当前 Homebrew，再重新运行第 3 章的检查。
 
 ### 14.3 安装器提示缺少 Node.js 或 uv
 
@@ -1052,14 +866,14 @@ brew install node uv
 先重新执行一次安装。短暂网络中断不代表环境损坏：
 
 ```bash
-cd "$HOME/obsidian-web-clipper-cn-transcript"
+cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
 bash install.sh
 ```
 
 如果确认官方 PyPI 在当前网络持续不可用，可以只为这次安装临时指定镜像：
 
 ```bash
-cd "$HOME/obsidian-web-clipper-cn-transcript"
+cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple \
   bash install.sh
 ```
@@ -1073,7 +887,7 @@ UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple \
 如果确认是 Hugging Face 连接问题，可以在终端中带临时镜像环境重新运行安装器，并再次选择 `tiny`：
 
 ```bash
-cd "$HOME/obsidian-web-clipper-cn-transcript"
+cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
 HF_ENDPOINT=https://hf-mirror.com bash install.sh
 ```
 
@@ -1083,7 +897,7 @@ HF_ENDPOINT=https://hf-mirror.com bash install.sh
 
 依次检查：
 
-1. Chrome 当前加载的是 `~/obsidian-web-clipper-cn-transcript/extension/dist`。
+1. Chrome 当前加载的是固定项目目录中的 `extension/dist`。
 2. Native Messaging Host 文件存在。
 3. Host 配置中的扩展 ID 与 Chrome 显示的 ID 一致。
 4. Helper Python 存在。
@@ -1235,15 +1049,14 @@ node --version
 - [ ] `node --version` 正常且版本不低于 18。
 - [ ] `uv --version` 正常。
 - [ ] 安装使用 `v0.3.0-macos.zip`，不是 `-chrome.zip`。
-- [ ] Release SHA-256 校验一致。
-- [ ] Chrome 加载 `~/obsidian-web-clipper-cn-transcript/extension/dist`。
+- [ ] Chrome 加载固定项目目录中的 `extension/dist`。
 - [ ] Native Messaging Host 已注册。
 - [ ] 没有创建 Transcript LaunchAgent。
 - [ ] Helper 可以由扩展按需启动。
 - [ ] Helper 监听 `127.0.0.1:8484`。
 - [ ] Faster Whisper 选择 `tiny`。
 - [ ] tiny 模型状态显示已安装。
-- [ ] 指定 YouTube 视频可以进入音频下载阶段。
+- [ ] 没有平台字幕的 YouTube 视频可以进入音频下载阶段。
 - [ ] Faster Whisper 可以完成本地识别。
 - [ ] 关闭弹窗不会取消任务。
 - [ ] 生成结果进入原有 `{{transcript}}` 变量。

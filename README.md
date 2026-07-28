@@ -228,7 +228,7 @@ Helper 会安装到：
 ~/.cache/obsidian-web-clipper-cn-transcript/
 ```
 
-安装脚本会自动迁移 `TranscriptGenerator` 和更早 `ClipNote` 名称使用的安装目录、模型缓存和 Native Messaging Host；扩展也会保留并迁移历史浏览器存储键。迁移不会删除 Cookies、模型、模板或任务设置。
+覆盖安装使用同一组项目目录，不会删除浏览器中的 Cookies、模板、Transcript 设置、本地模型或 transcript 缓存。
 
 并注册 Native Messaging Host：
 
