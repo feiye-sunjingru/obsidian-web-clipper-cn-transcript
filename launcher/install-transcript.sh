@@ -8,10 +8,12 @@ if [ -d "$WORKSPACE_ROOT/helper" ]; then
 else
   SOURCE_HELPER="$WORKSPACE_ROOT/transcript-helper"
 fi
-INSTALL_DIR="$HOME/Library/Application Support/TranscriptGenerator"
+INSTALL_DIR="$HOME/Library/Application Support/ObsidianWebClipperCNTranscript"
+PREVIOUS_INSTALL_DIR="$HOME/Library/Application Support/TranscriptGenerator"
 LEGACY_INSTALL_DIR="$HOME/Library/Application Support/ClipNote"
+PREVIOUS_CACHE_DIR="$HOME/.cache/transcript-generator"
 LEGACY_CACHE_DIR="$HOME/.cache/clip-note"
-CACHE_DIR="$HOME/.cache/transcript-generator"
+CACHE_DIR="$HOME/.cache/obsidian-web-clipper-cn-transcript"
 HELPER_DIR="$INSTALL_DIR/helper"
 LAUNCHER_DIR="$INSTALL_DIR/launcher"
 BIN_DIR="$INSTALL_DIR/bin"
@@ -33,7 +35,7 @@ for arg in "$@"; do
   esac
 done
 
-if { [ -d "$INSTALL_DIR" ] || [ -d "$LEGACY_INSTALL_DIR" ]; } && [ "$FORCE" != true ]; then
+if { [ -d "$INSTALL_DIR" ] || [ -d "$PREVIOUS_INSTALL_DIR" ] || [ -d "$LEGACY_INSTALL_DIR" ]; } && [ "$FORCE" != true ]; then
   echo "Error: an existing Transcript Helper installation was found." >&2
   echo "Run the repository root install.sh to confirm an overwrite installation." >&2
   exit 2
@@ -44,10 +46,14 @@ if ! command -v uv >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ -d "$LEGACY_INSTALL_DIR" ] && [ ! -e "$INSTALL_DIR" ]; then
+if [ -d "$PREVIOUS_INSTALL_DIR" ] && [ ! -e "$INSTALL_DIR" ]; then
+  mv "$PREVIOUS_INSTALL_DIR" "$INSTALL_DIR"
+elif [ -d "$LEGACY_INSTALL_DIR" ] && [ ! -e "$INSTALL_DIR" ]; then
   mv "$LEGACY_INSTALL_DIR" "$INSTALL_DIR"
 fi
-if [ -d "$LEGACY_CACHE_DIR" ] && [ ! -e "$CACHE_DIR" ]; then
+if [ -d "$PREVIOUS_CACHE_DIR" ] && [ ! -e "$CACHE_DIR" ]; then
+  mv "$PREVIOUS_CACHE_DIR" "$CACHE_DIR"
+elif [ -d "$LEGACY_CACHE_DIR" ] && [ ! -e "$CACHE_DIR" ]; then
   mv "$LEGACY_CACHE_DIR" "$CACHE_DIR"
 fi
 

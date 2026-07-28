@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-INSTALL_DIR="$HOME/Library/Application Support/TranscriptGenerator"
+INSTALL_DIR="$HOME/Library/Application Support/ObsidianWebClipperCNTranscript"
+PREVIOUS_INSTALL_DIR="$HOME/Library/Application Support/TranscriptGenerator"
 LEGACY_INSTALL_DIR="$HOME/Library/Application Support/ClipNote"
 ASSUME_YES=false
 WHISPER_MODEL="skip"
@@ -59,6 +60,8 @@ fi
 EXISTING_INSTALL_DIR=""
 if [ -d "$INSTALL_DIR" ]; then
   EXISTING_INSTALL_DIR="$INSTALL_DIR"
+elif [ -d "$PREVIOUS_INSTALL_DIR" ]; then
+  EXISTING_INSTALL_DIR="$PREVIOUS_INSTALL_DIR"
 elif [ -d "$LEGACY_INSTALL_DIR" ]; then
   EXISTING_INSTALL_DIR="$LEGACY_INSTALL_DIR"
 fi
@@ -93,9 +96,9 @@ choose_whisper_model() {
 
   echo
   echo "Choose a Faster Whisper model to download now:"
-  echo "  1) Skip (download later in the extension settings)"
-  echo "  2) tiny"
-  echo "  3) base (extension default)"
+  echo "  1) tiny (recommended; extension default)"
+  echo "  2) Skip (download later in the extension settings)"
+  echo "  3) base"
   echo "  4) small"
   echo "  5) medium"
   echo "  6) large-v3"
@@ -104,8 +107,8 @@ choose_whisper_model() {
     printf "Select [1-7, default 1]: "
     read -r choice
     case "$choice" in
-      ""|1) WHISPER_MODEL="skip"; break ;;
-      2) WHISPER_MODEL="tiny"; break ;;
+      ""|1) WHISPER_MODEL="tiny"; break ;;
+      2) WHISPER_MODEL="skip"; break ;;
       3) WHISPER_MODEL="base"; break ;;
       4) WHISPER_MODEL="small"; break ;;
       5) WHISPER_MODEL="medium"; break ;;
@@ -137,7 +140,7 @@ import sys
 from transcript_helper.models import WhisperModelManager
 
 model = sys.argv[1]
-manager = WhisperModelManager(Path.home() / ".cache" / "transcript-generator" / "models")
+manager = WhisperModelManager(Path.home() / ".cache" / "obsidian-web-clipper-cn-transcript" / "models")
 manager.download(model)
 PY
   then

@@ -15,7 +15,7 @@ from .schemas import TaskCreated, TaskStatus, TranscriptionRequest, WhisperModel
 from .service import TranscriptionService
 
 
-DATA_ROOT = Path.home() / ".cache" / "transcript-generator"
+DATA_ROOT = Path.home() / ".cache" / "obsidian-web-clipper-cn-transcript"
 service = TranscriptionService(DATA_ROOT)
 model_downloads: dict[str, str] = {}
 model_downloads_lock = threading.Lock()
