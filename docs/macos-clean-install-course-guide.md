@@ -48,13 +48,13 @@ yt-dlp 下载音频 + Faster Whisper tiny 本地识别
 本教程以以下稳定位置为例：
 
 ```text
-~/Applications/obsidian-web-clipper-cn-transcript/
+~/obsidian-web-clipper-cn-transcript/
 ```
 
 这里保存 GitHub Release 解压后的扩展文件和安装脚本。它不是强制路径；用户也可以选择其他固定目录。Chrome 会持续读取其中的：
 
 ```text
-~/Applications/obsidian-web-clipper-cn-transcript/extension/dist/
+~/obsidian-web-clipper-cn-transcript/extension/dist/
 ```
 
 Helper 的实际运行副本安装在：
@@ -351,10 +351,10 @@ obsidian-web-clipper-cn-transcript-v0.3.0-macos
 
 安装包不强制放在 Home 根目录。桌面、下载文件夹或其他有读写权限的位置都可以，但 Chrome 会持续读取其中的扩展文件，因此应选择一个不会随手删除或移动的固定目录。
 
-下面以当前用户的 `Applications` 文件夹为例，并统一使用与项目和 GitHub 仓库相同的名称：
+不建议放进 `Applications` 文件夹，因为这里通常用于保存应用程序。下面推荐直接放在当前用户的 Home 目录，并统一使用与项目和 GitHub 仓库相同的名称：
 
 ```text
-~/Applications/obsidian-web-clipper-cn-transcript
+~/obsidian-web-clipper-cn-transcript
 ```
 
 也可以使用下面的终端命令解压：
@@ -366,23 +366,24 @@ ditto -x -k \
   "$HOME/Downloads"
 ```
 
-下面的命令创建用户自己的 `Applications` 文件夹，然后移动并改名：
+下面的命令把解压后的文件夹移动到 Home 目录并改名：
 
 ```bash
-mkdir -p "$HOME/Applications"
 mv \
   "$HOME/Downloads/obsidian-web-clipper-cn-transcript-v0.3.0-macos" \
-  "$HOME/Applications/obsidian-web-clipper-cn-transcript"
+  "$HOME/obsidian-web-clipper-cn-transcript"
 ```
 
-这里的目录只是示例，不是强制路径。如果改用其他位置，后面的 `cd` 命令和 Chrome 加载目录也要使用同一个实际路径。安装完成后不要删除或移动该目录。
+Home 目录只是推荐示例，不是强制路径。如果改用其他位置，安装完成后同样不要删除或移动该目录。
+
+从下一节开始，教程使用 `/你的实际保存目录/obsidian-web-clipper-cn-transcript` 作为占位符。执行命令前，必须把它替换成刚才选择的真实路径。可以在 Finder 中选中文件夹，按 `Option + Command + C` 复制完整路径。
 
 ### 6.3 检查安装包结构
 
 下面的命令进入目录并显示关键文件：
 
 ```bash
-cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
+cd "/你的实际保存目录/obsidian-web-clipper-cn-transcript"
 pwd
 ls -la
 ls -la extension/dist
@@ -414,10 +415,10 @@ settings.html
 
 ### 7.1 运行安装器
 
-下面的命令必须在刚才解压并固定保存的项目目录中执行。按照本教程示例：
+下面的命令必须在刚才解压并固定保存的项目目录中执行。请替换成自己的真实路径：
 
 ```bash
-cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
+cd "/你的实际保存目录/obsidian-web-clipper-cn-transcript"
 bash install.sh
 ```
 
@@ -516,7 +517,7 @@ find "$HOME/Library/LaunchAgents" \
 6. 输入下面的路径：
 
 ```text
-~/Applications/obsidian-web-clipper-cn-transcript/extension/dist
+/你的实际保存目录/obsidian-web-clipper-cn-transcript/extension/dist
 ```
 
 7. 点击“前往”。
@@ -866,14 +867,14 @@ brew install node uv
 先重新执行一次安装。短暂网络中断不代表环境损坏：
 
 ```bash
-cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
+cd "/你的实际保存目录/obsidian-web-clipper-cn-transcript"
 bash install.sh
 ```
 
 如果确认官方 PyPI 在当前网络持续不可用，可以只为这次安装临时指定镜像：
 
 ```bash
-cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
+cd "/你的实际保存目录/obsidian-web-clipper-cn-transcript"
 UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple \
   bash install.sh
 ```
@@ -887,7 +888,7 @@ UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple \
 如果确认是 Hugging Face 连接问题，可以在终端中带临时镜像环境重新运行安装器，并再次选择 `tiny`：
 
 ```bash
-cd "$HOME/Applications/obsidian-web-clipper-cn-transcript"
+cd "/你的实际保存目录/obsidian-web-clipper-cn-transcript"
 HF_ENDPOINT=https://hf-mirror.com bash install.sh
 ```
 
