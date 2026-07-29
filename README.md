@@ -1,6 +1,8 @@
 # Obsidian Web Clipper CN · Transcript
 
-![Transcript Generator 图标](extension/src/icons/transcript-generator.svg)
+<p align="center">
+  <img src="extension/src/icons/transcript-generator.svg" alt="Transcript Generator 图标" width="96">
+</p>
 
 > [!IMPORTANT]
 > 本项目仅支持 **macOS + Chrome/Chromium**。不支持 Windows 或 Linux，并且当前没有开发 Windows/Linux 版本的计划。
