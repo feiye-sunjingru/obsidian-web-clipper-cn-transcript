@@ -348,6 +348,24 @@ Settings → Transcript Generator
 3. 如果选择 Faster Whisper，先下载模型。
 4. 按需要配置 Bilibili / YouTube Cookies。
 
+### 可选：代理与自定义路径
+
+**下载代理（推荐在设置页配置）**：`Settings → Transcript Generator → 下载代理` 留空表示直连；填写 `http://127.0.0.1:1001` 等地址后，仅当前字幕任务的音轨下载和 BCut 上传走代理，不影响其他流量。YouTube 出现 "Sign in to confirm you're not a bot" 时可配合 Cookies 使用。
+
+**Helper 级配置（config.json）**：以下可选手段写入 Helper 安装目录下的 `config.json`（macOS 位于 `~/Library/Application Support/ObsidianWebClipperCNTranscript/`，Windows 位于 `%LOCALAPPDATA%\ObsidianWebClipperCNTranscript\`），重启 Helper 后生效：
+
+```json
+{
+  "proxy": "http://127.0.0.1:1001",
+  "modelsDir": "D:\\PersonProgramData\\AI_Models\\transcript-models",
+  "hfCacheDir": "D:\\PersonProgramData\\AI_Models\\huggingface_cache"
+}
+```
+
+- `proxy`：Helper 全局兜底代理（含模型下载）。设置页的"下载代理"优先级更高，只影响单个任务。
+- `modelsDir`：Whisper 模型目录。已有 `tiny` 等模型文件夹时可直接指向其上级目录；也可以在其中创建同名 junction/软链接指向既有模型。
+- `hfCacheDir`：HuggingFace 缓存目录（`HF_HUB_CACHE`）。已有 `models--Systran--faster-whisper-*` 缓存时，模型下载会直接命中缓存，不再重复联网。
+
 ## 本地数据与隐私
 
 | 数据 | 保存位置 | 是否同步 |

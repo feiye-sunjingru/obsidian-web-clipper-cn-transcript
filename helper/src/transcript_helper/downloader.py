@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 
 
-def download_audio(url: str, output_dir: Path, cookiefile: Path | None = None) -> Path:
+def download_audio(url: str, output_dir: Path, cookiefile: Path | None = None, proxy: str | None = None) -> Path:
     try:
         import yt_dlp
     except ImportError as exc:
@@ -21,6 +21,8 @@ def download_audio(url: str, output_dir: Path, cookiefile: Path | None = None) -
     }
     if cookiefile:
         options["cookiefile"] = str(cookiefile)
+    if proxy:
+        options["proxy"] = proxy
     node = shutil.which("node")
     if node:
         options["js_runtimes"] = {"node": {"path": node}}

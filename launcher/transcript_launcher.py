@@ -117,9 +117,21 @@ def start() -> dict:
     env = os.environ.copy()
     env["TRANSCRIPT_HELPER_TOKEN"] = token
     env["TRANSCRIPT_HELPER_IDLE_TIMEOUT"] = str(config.get("idleTimeoutSeconds", 900))
+    proxy = config.get("proxy")
+    if proxy:
+        env["HTTP_PROXY"] = proxy
+        env["HTTPS_PROXY"] = proxy
+        env["NO_PROXY"] = "127.0.0.1,localhost"
+    models_dir = config.get("modelsDir")
+    if models_dir:
+        env["TRANSCRIPT_HELPER_MODELS_DIR"] = models_dir
+    hf_cache_dir = config.get("hfCacheDir")
+    if hf_cache_dir:
+        env["HF_HUB_CACHE"] = hf_cache_dir
     node_dir = config.get("nodeDir")
     if node_dir:
-        env["PATH"] = f"{node_dir}:{env.get('PATH', '')}"
+        separator = ";" if os.name == "nt" else ":"
+        env["PATH"] = f"{node_dir}{separator}{env.get('PATH', '')}"
     APP_DIR.joinpath("runtime").mkdir(parents=True, exist_ok=True)
     APP_DIR.joinpath("logs").mkdir(parents=True, exist_ok=True)
     with LOG_PATH.open("ab") as log:
