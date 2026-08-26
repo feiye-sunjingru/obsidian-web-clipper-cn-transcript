@@ -21,9 +21,11 @@ foreach ($commandName in @('node', 'uv')) {
   }
 }
 
-$NodeMajor = [int](node -p 'process.versions.node.split(".")[0]')
+# Avoid embedded quotes here: PowerShell 5.1 mangles them when invoking native commands.
+$NodeVersion = (node --version)
+$NodeMajor = [int]($NodeVersion.TrimStart('v').Split('.')[0])
 if ($NodeMajor -lt 18) {
-  Write-Host "Error: Node.js 18 or newer is required. Current version: $(node --version)" -ForegroundColor Red
+  Write-Host "Error: Node.js 18 or newer is required. Current version: $NodeVersion" -ForegroundColor Red
   exit 1
 }
 
