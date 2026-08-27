@@ -41,6 +41,115 @@ const isSidePanel = window.location.pathname.includes('side-panel.html');
 const urlParams = new URLSearchParams(window.location.search);
 const isIframe = urlParams.get('context') === 'iframe';
 
+type ClipSaveState = 'processing' | 'sent' | 'error' | 'interrupted';
+
+interface ClipSaveStatus {
+	tabId: number;
+	url: string;
+	state: ClipSaveState;
+	stage?: 'interpreting' | 'generating' | 'sending';
+	errorMessage?: string;
+	updatedAt: number;
+}
+
+const CLIP_SAVE_STATUS_PREFIX = 'clipSaveStatus:';
+const CLIP_SAVE_PROCESSING_TIMEOUT_MS = 120000;
+let activeClipSaveStatus: ClipSaveStatus | null = null;
+let isClipSaveActive = false;
+
+function getClipStatusKey(tabId: number): string {
+	return `${CLIP_SAVE_STATUS_PREFIX}${tabId}`;
+}
+
+async function getClipSaveStatus(tabId: number): Promise<ClipSaveStatus | null> {
+	const status = await getLocalStorage(getClipStatusKey(tabId)) as ClipSaveStatus | null;
+	if (!status || status.tabId !== tabId) return null;
+	if (status.state === 'processing' && Date.now() - status.updatedAt > CLIP_SAVE_PROCESSING_TIMEOUT_MS) {
+		return { ...status, state: 'interrupted', errorMessage: getMessage('clipSaveInterrupted') };
+	}
+	return status;
+}
+
+async function setClipSaveStatus(
+	tabId: number,
+	url: string,
+	patch: Pick<ClipSaveStatus, 'state'> & Partial<Pick<ClipSaveStatus, 'stage' | 'errorMessage'>>,
+): Promise<void> {
+	const previous = await getClipSaveStatus(tabId);
+	const samePage = previous?.url === url;
+	activeClipSaveStatus = {
+		tabId,
+		url,
+		state: patch.state,
+		stage: patch.stage ?? (samePage ? previous?.stage : undefined),
+		errorMessage: patch.errorMessage ?? (samePage ? previous?.errorMessage : undefined),
+		updatedAt: Date.now()
+	};
+	await setLocalStorage(getClipStatusKey(tabId), activeClipSaveStatus);
+	showClipSaveStatus(activeClipSaveStatus);
+}
+
+function showClipSaveStatus(status: ClipSaveStatus | null): void {
+	const container = document.getElementById('clip-save-status');
+	const mainButton = document.getElementById('clip-btn');
+	if (!container) return;
+
+	container.classList.remove('is-processing', 'is-sent', 'has-error');
+	mainButton?.classList.remove('save-status-sent');
+	if (!status) {
+		container.hidden = true;
+		container.textContent = '';
+		return;
+	}
+
+	let messageKey: string;
+	let substitution: string | undefined;
+	if (status.state === 'error') {
+		messageKey = 'clipSaveFailed';
+		substitution = status.errorMessage || getMessage('failedToSaveFile');
+		container.classList.add('has-error');
+	} else if (status.state === 'sent') {
+		messageKey = 'clipSaveSent';
+		container.classList.add('is-sent');
+		mainButton?.classList.add('save-status-sent');
+	} else if (status.state === 'interrupted') {
+		messageKey = 'clipSaveInterrupted';
+	} else {
+		switch (status.stage) {
+			case 'interpreting': messageKey = 'clipSaveInterpreting'; break;
+			case 'generating': messageKey = 'clipSaveGenerating'; break;
+			default: messageKey = 'clipSavePreparing';
+		}
+		container.classList.add('is-processing');
+	}
+
+	container.hidden = false;
+	container.textContent = getMessage(messageKey, substitution);
+}
+
+async function restoreClipSaveStatus(tabId: number, url: string): Promise<void> {
+	const storedStatus = await getClipSaveStatus(tabId);
+	if (storedStatus && storedStatus.url === url) {
+		activeClipSaveStatus = storedStatus;
+		showClipSaveStatus(storedStatus);
+	} else {
+		activeClipSaveStatus = null;
+		showClipSaveStatus(null);
+	}
+}
+
+async function markActiveClipSaveInterrupted(): Promise<void> {
+	if (!currentTabId || !activeClipSaveStatus || activeClipSaveStatus.state !== 'processing') return;
+	const interrupted: ClipSaveStatus = {
+		...activeClipSaveStatus,
+		state: 'interrupted',
+		errorMessage: getMessage('clipSaveInterrupted'),
+		updatedAt: Date.now()
+	};
+	activeClipSaveStatus = interrupted;
+	await setLocalStorage(getClipStatusKey(interrupted.tabId), interrupted);
+	showClipSaveStatus(interrupted);
+}
 // Memoize compileTemplate with a short expiration and URL-sensitive key
 const memoizedCompileTemplate = memoizeWithExpiration(
 	async (tabId: number, template: string, variables: { [key: string]: string }, currentUrl: string) => {
@@ -217,6 +326,7 @@ async function initializeExtension(tabId: number) {
 		setupMessageListeners();
 		setupStorageListeners();
 
+		await restoreClipSaveStatus(tabId, tab.url);
 		await checkHighlighterModeState(tabId);
 
 		return true;
@@ -384,6 +494,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 				await initializeUI();
 
 				determineMainAction();
+
+				window.addEventListener('beforeunload', () => {
+					void markActiveClipSaveInterrupted();
+				});
 
 				const showMoreActionsButton = document.getElementById('show-variables');
 				if (showMoreActionsButton) {
@@ -1325,6 +1439,7 @@ function determineMainAction() {
 
 async function handleClipObsidian(): Promise<void> {
 	if (!currentTemplate) return;
+	if (isClipSaveActive) return;
 
 	const vaultDropdown = document.getElementById('vault-select') as HTMLSelectElement;
 	const noteContentField = document.getElementById('note-content-field') as HTMLTextAreaElement;
@@ -1337,8 +1452,13 @@ async function handleClipObsidian(): Promise<void> {
 		return;
 	}
 
+	isClipSaveActive = true;
+	setClipSaveUiBusy(true);
+
 	try {
-		// Handle interpreter if needed
+		const tab = await getTabInfo(currentTabId!);
+		await setClipSaveStatus(currentTabId!, tab.url, { state: 'processing', stage: 'interpreting' });
+
 		if (generalSettings.interpreterEnabled && interpretBtn && collectPromptVariables(currentTemplate).length > 0) {
 			if (interpretBtn.classList.contains('processing')) {
 				await waitForInterpreter(interpretBtn);
@@ -1348,33 +1468,77 @@ async function handleClipObsidian(): Promise<void> {
 			}
 		}
 
-		// Gather content
+		await setClipSaveStatus(currentTabId!, tab.url, { state: 'processing', stage: 'generating' });
 		const properties = getPropertiesFromDOM();
-
 		const frontmatter = await generateFrontmatter(properties);
 		const fileContent = frontmatter + noteContentField.value;
 
-		// Save to Obsidian
 		const selectedVault = vaultDropdown.value || currentTemplate.vault || '';
 		const isDailyNote = currentTemplate.behavior === 'append-daily' || currentTemplate.behavior === 'prepend-daily';
 		const noteName = isDailyNote ? '' : noteNameField?.value || '';
 		const path = isDailyNote ? '' : pathField?.value || '';
 
+		await setClipSaveStatus(currentTabId!, tab.url, { state: 'processing', stage: 'sending' });
 		await saveToObsidian(fileContent, noteName, path, selectedVault, currentTemplate.behavior);
-		const tabInfo = await getCurrentTabInfo();
-		await incrementStat('addToObsidian', selectedVault, path, tabInfo.url, tabInfo.title);
+		await setClipSaveStatus(currentTabId!, tab.url, { state: 'sent' });
 
-		lastSelectedVault = selectedVault;
-		await setLocalStorage('lastSelectedVault', lastSelectedVault);
+		try {
+			const latestTabInfo = await getCurrentTabInfo();
+			await incrementStat('addToObsidian', selectedVault, path, latestTabInfo.url, latestTabInfo.title);
+			lastSelectedVault = selectedVault;
+			await setLocalStorage('lastSelectedVault', lastSelectedVault);
+		} catch (trackingError) {
+			console.error('The clip was saved, but tracking could not be updated:', trackingError);
+		}
 
 		if (!isSidePanel) {
 			setTimeout(() => window.close(), 500);
 		}
 	} catch (error) {
+		const detail = error instanceof Error ? error.message : String(error);
 		console.error('Error in handleClipObsidian:', error);
-		showError('failedToSaveFile');
+		try {
+			const tab = await getTabInfo(currentTabId!);
+			await setClipSaveStatus(currentTabId!, tab.url, { state: 'error', errorMessage: detail });
+		} catch (statusError) {
+			console.error('Failed to persist clip save error:', statusError);
+			showClipSaveStatus({
+				tabId: currentTabId ?? -1,
+				url: '',
+				state: 'error',
+				errorMessage: detail,
+				updatedAt: Date.now()
+			});
+		}
 		throw error;
+	} finally {
+		isClipSaveActive = false;
+		setClipSaveUiBusy(false);
 	}
+}
+
+function setClipSaveUiBusy(busy: boolean): void {
+	const mainButton = document.getElementById('clip-btn') as HTMLButtonElement | null;
+	const secondaryActions = document.querySelector('.secondary-actions');
+
+	if (mainButton) {
+		mainButton.disabled = busy;
+		if (busy) {
+			mainButton.setAttribute('aria-busy', 'true');
+			mainButton.textContent = getMessage('clipSavePreparing');
+		} else {
+			mainButton.removeAttribute('aria-busy');
+			determineMainAction();
+			if (activeClipSaveStatus?.state === 'sent') mainButton.classList.add('save-status-sent');
+		}
+	}
+
+	secondaryActions?.querySelectorAll('.menu-item').forEach((item) => {
+		const title = item.querySelector('.menu-item-title');
+		if (title?.textContent === getMessage('addToObsidian')) {
+			item.classList.toggle('menu-item-disabled', busy);
+		}
+	});
 }
 
 function addSecondaryAction(container: Element, actionType: string, handler: () => void) {
