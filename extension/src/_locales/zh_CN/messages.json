@@ -42,7 +42,7 @@
 		"message": "正在打开 Obsidian..."
 	},
 	"clipSaveSent": {
-		"message": "已发送到 Obsidian。"
+		"message": "已发送到 Obsidian。再次点击可保存更新后的笔记。"
 	},
 	"addVaultPlaceholder": {
 		"message": "按回车键添加保管库"

@@ -351,6 +351,46 @@ function setupStorageListeners() {
 			debouncedHighlightRefresh();
 		}
 	});
+
+	browser.storage.sync.onChanged.addListener((changes) => {
+		const templateChanged = Object.keys(changes).some(
+			key => key === 'template_list' || key.startsWith('template_')
+		);
+		if (templateChanged) {
+			debouncedTemplateRefresh();
+		}
+	});
+}
+
+const debouncedTemplateRefresh = debounce(() => {
+	void reloadTemplateFromSettings();
+}, 300);
+
+async function reloadTemplateFromSettings() {
+	try {
+		const currentTemplateId = currentTemplate?.id;
+		loadedSettings = await loadSettings();
+		templates = await loadTemplates();
+
+		if (!templates.length || !currentTabId) return;
+
+		initializeTriggers(templates);
+		currentTemplate = templates.find(template => template.id === currentTemplateId)
+			?? templates[0];
+
+		updateVaultDropdown(loadedSettings.vaults);
+		populateTemplateDropdown();
+		determineMainAction();
+
+		activeClipSaveStatus = null;
+		showClipSaveStatus(null);
+		memoizedCompileTemplate.clear();
+
+		await refreshFields(currentTabId, { checkTemplateTriggers: false });
+	} catch (error) {
+		console.error('Error refreshing template from settings:', error);
+		showError('failedToInitialize');
+	}
 }
 
 function setupMessageListeners() {
@@ -856,6 +896,8 @@ async function refreshFields(tabId: number, { checkTemplateTriggers = true, rebu
 						// The first render cached the page's empty transcript. Invalidate it so
 						// note content and Interpreter context are compiled with the ASR result.
 						memoizedCompileTemplate.clear();
+						activeClipSaveStatus = null;
+						showClipSaveStatus(null);
 						currentVariables['{{transcript}}'] = transcript;
 						await fillTemplateFieldValues(tabId, currentTemplate, currentVariables, extractedData.schemaOrgData);
 						updateVariablesPanel(currentTemplate, currentVariables);
@@ -984,9 +1026,13 @@ function buildTemplateFieldsSkeleton(template: Template | null) {
 		noteContentField.setAttribute('data-template-value', template.noteContentFormat || '');
 	}
 
-	// Show/hide interpreter section based on template prompt variables
 	const interpreterContainer = document.getElementById('interpreter');
-	const interpretBtn = document.getElementById('interpret-btn');
+	const interpretBtn = document.getElementById('interpret-btn') as HTMLButtonElement;
+	if (interpretBtn) {
+		interpretBtn.classList.remove('done', 'error', 'processing');
+		interpretBtn.disabled = false;
+		interpretBtn.textContent = getMessage('interpret');
+	}
 	const hasPromptVars = generalSettings.interpreterEnabled && collectPromptVariables(template).length > 0;
 	if (interpreterContainer) interpreterContainer.style.display = hasPromptVars ? 'flex' : 'none';
 	if (interpretBtn) interpretBtn.style.display = hasPromptVars ? 'inline-block' : 'none';
@@ -1083,7 +1129,6 @@ async function fillTemplateFieldValues(currentTabId: number, template: Template 
 
 				if (interpretBtn) {
 					interpretBtn.classList.add('done');
-					interpretBtn.disabled = true;
 				}
 			} catch (error) {
 				console.error('Error auto-processing with interpreter:', error);
@@ -1459,7 +1504,11 @@ async function handleClipObsidian(): Promise<void> {
 		const tab = await getTabInfo(currentTabId!);
 		await setClipSaveStatus(currentTabId!, tab.url, { state: 'processing', stage: 'interpreting' });
 
-		if (generalSettings.interpreterEnabled && interpretBtn && collectPromptVariables(currentTemplate).length > 0) {
+		const shouldInterpret = generalSettings.interpreterEnabled
+			&& Boolean(interpretBtn)
+			&& collectPromptVariables(currentTemplate).length > 0;
+
+		if (shouldInterpret && interpretBtn) {
 			if (interpretBtn.classList.contains('processing')) {
 				await waitForInterpreter(interpretBtn);
 			} else if (!interpretBtn.classList.contains('done')) {

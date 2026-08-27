@@ -42,7 +42,7 @@
 		"message": "Opening Obsidian..."
 	},
 	"clipSaveSent": {
-		"message": "Sent to Obsidian."
+		"message": "Sent to Obsidian. Click again to add an updated note."
 	},
 	"addVaultPlaceholder": {
 		"message": "Press enter to add a vault"
